@@ -1,0 +1,50 @@
+/* Container */
+.auth-container {
+  @apply flex min-h-screen w-full bg-gray-100;
+}
+
+/* Image Side */
+.auth-image-panel {
+  @apply w-1/2 bg-white flex items-center justify-center p-6;
+}
+
+.auth-image {
+  @apply w-full max-w-md;
+}
+
+/* Form Side */
+.auth-form-panel {
+  @apply w-1/2 flex items-center justify-center bg-white;
+}
+
+.form-wrapper {
+  @apply w-full max-w-sm bg-white p-6 rounded-lg shadow-lg;
+}
+
+.form-title {
+  @apply text-2xl font-bold text-gray-800 mb-6 text-center;
+}
+
+.input-group {
+  @apply mb-4;
+}
+
+.input-group label {
+  @apply block mb-1 text-sm font-semibold text-gray-600;
+}
+
+.input-group input {
+  @apply w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400;
+}
+
+.btn-primary {
+  @apply w-full bg-blue-600 text-white font-semibold py-2 rounded-md hover:bg-blue-700 transition;
+}
+
+.toggle-text {
+  @apply text-sm text-center mt-4 text-gray-600;
+}
+
+.toggle-text span {
+  @apply text-blue-600 font-semibold cursor-pointer ml-1 hover:underline;
+}
