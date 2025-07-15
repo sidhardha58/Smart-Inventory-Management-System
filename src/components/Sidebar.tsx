@@ -100,12 +100,29 @@ const Sidebar = () => {
             </div>
             <ChevronRight className="w-4 h-4 transition-transform duration-200 group-hover:rotate-90" />
           </div>
+
           <div className="hidden group-hover:block bg-white text-black rounded-md shadow-md mt-1 ml-6 w-48">
             <div className="h-[2px] bg-[#0077b6] mb-1" />
-            <div className="px-4 py-2 hover:bg-gray-100 hover:text-[#0077b6] cursor-pointer rounded-t-md">
+
+            <div
+              className={`px-4 py-2 cursor-pointer rounded-t-md hover:bg-gray-100 hover:text-[#0077b6] ${
+                isActive("/dashboard/attributes")
+                  ? "bg-gray-100 text-[#0077b6]"
+                  : ""
+              }`}
+              onClick={() => router.push("/dashboard/attributes")}
+            >
               Attribute List
             </div>
-            <div className="px-4 py-2 hover:bg-gray-100 hover:text-[#0077b6] cursor-pointer rounded-b-md">
+
+            <div
+              className={`px-4 py-2 cursor-pointer rounded-b-md hover:bg-gray-100 hover:text-[#0077b6] ${
+                isActive("/dashboard/attributes/add")
+                  ? "bg-gray-100 text-[#0077b6]"
+                  : ""
+              }`}
+              onClick={() => router.push("/dashboard/attributes/add")}
+            >
               Add Attribute
             </div>
           </div>
