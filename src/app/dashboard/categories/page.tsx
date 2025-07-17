@@ -22,7 +22,7 @@ export default function CategoryListPage() {
   const fetchCategories = async () => {
     try {
       const res = await axios.get("/api/dashboard/categories");
-      setCategories(res.data);
+      setCategories(res.data.categories); // 👈 only extract the array
     } catch (err) {
       console.error("Error loading categories:", err);
     }

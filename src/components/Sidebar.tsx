@@ -82,10 +82,16 @@ const Sidebar = () => {
           </div>
           <div className="hidden group-hover:block bg-white text-black rounded-md shadow-md mt-1 ml-6 w-48">
             <div className="h-[2px] bg-[#0077b6] mb-1" />
-            <div className="px-4 py-2 hover:bg-gray-100 hover:text-[#0077b6] cursor-pointer rounded-t-md">
+            <div
+              className="px-4 py-2 hover:bg-gray-100 hover:text-[#0077b6] cursor-pointer rounded-t-md"
+              onClick={() => router.push("/dashboard/products")}
+            >
               Product List
             </div>
-            <div className="px-4 py-2 hover:bg-gray-100 hover:text-[#0077b6] cursor-pointer rounded-b-md">
+            <div
+              className="px-4 py-2 hover:bg-gray-100 hover:text-[#0077b6] cursor-pointer rounded-b-md"
+              onClick={() => router.push("/dashboard/products/add")}
+            >
               Add Product
             </div>
           </div>

@@ -17,7 +17,7 @@ export default function EditCategoryPage() {
     async function fetchCategory() {
       try {
         const res = await axios.get(`/api/dashboard/categories`);
-        const category = res.data.find((cat: any) => cat._id === id);
+        const category = res.data.categories.find((cat: any) => cat._id === id);
         if (!category) {
           setError("Category not found");
           setLoading(false);

@@ -14,7 +14,7 @@ export default function DeleteCategoryPage() {
     const fetchCategory = async () => {
       try {
         const res = await axios.get(`/api/dashboard/categories`);
-        const category = res.data.find((c: any) => c._id === id);
+        const category = res.data.categories.find((c: any) => c._id === id);
         if (category) setCategoryName(category.name || "");
       } catch (err) {
         console.error("Failed to fetch category:", err);

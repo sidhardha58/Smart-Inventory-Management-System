@@ -2,11 +2,12 @@ import { NextRequest, NextResponse } from "next/server";
 import { connect } from "@/dbConfig/dbConfig";
 import Category from "@/models/categoryModel";
 
+// GET: Return categories with id & name
 export async function GET() {
   await connect();
   try {
-    const categories = await Category.find().sort({ _id: 1 });
-    return NextResponse.json(categories);
+    const categories = await Category.find({}, "_id name").sort({ _id: 1 });
+    return NextResponse.json({ categories }); // wrapped in object for consistency
   } catch (error) {
     console.error("GET error:", error);
     return NextResponse.json(
@@ -16,15 +17,17 @@ export async function GET() {
   }
 }
 
+// POST: Add a new category
 export async function POST(req: NextRequest) {
   await connect();
   try {
     const data = await req.json();
+
     if (!data.name || !data.name.trim()) {
       return NextResponse.json({ error: "Name is required" }, { status: 400 });
     }
 
-    const newCategory = new Category({ name: data.name });
+    const newCategory = new Category({ name: data.name.trim() });
     await newCategory.save();
 
     return NextResponse.json({
@@ -40,6 +43,7 @@ export async function POST(req: NextRequest) {
   }
 }
 
+// DELETE: Delete category by ID
 export async function DELETE(req: NextRequest) {
   await connect();
   try {
@@ -50,6 +54,7 @@ export async function DELETE(req: NextRequest) {
     }
 
     const deleted = await Category.findByIdAndDelete(id);
+
     if (!deleted) {
       return NextResponse.json(
         { error: "Category not found" },
