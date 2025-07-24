@@ -1,5 +1,17 @@
 import mongoose from "mongoose";
 
+const attributeSchema = new mongoose.Schema(
+  {
+    attribute: { type: String, required: true },
+    value: { type: String, required: true },
+    soldAs: { type: String, enum: ["Piece", "Pack"], required: true },
+    price: { type: Number, required: true },
+    inventory: { type: Number, required: true },
+    tax: { type: String, required: true },
+  },
+  { _id: false }
+);
+
 const productSchema = new mongoose.Schema(
   {
     name: {
@@ -10,17 +22,6 @@ const productSchema = new mongoose.Schema(
     description: {
       type: String,
     },
-    price: {
-      type: Number,
-      required: true,
-    },
-    costPrice: {
-      type: Number,
-    },
-    quantity: {
-      type: Number,
-      default: 0,
-    },
     image: {
       type: String, // Single image URL or path
     },
@@ -29,14 +30,7 @@ const productSchema = new mongoose.Schema(
       ref: "Category",
       required: true,
     },
-    attributes: [
-      {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "Attribute",
-      },
-    ],
-    tax: { type: Number },
-    soldAs: { type: String },
+    attributes: [attributeSchema], // Inline custom attributes with values
   },
   {
     timestamps: true,

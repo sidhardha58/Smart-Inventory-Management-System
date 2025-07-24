@@ -6,36 +6,40 @@ import { useRouter } from "next/navigation";
 import { Pencil, Trash2, Search } from "lucide-react";
 import { toast } from "react-hot-toast";
 import Sidebar from "@/components/Sidebar";
-
-interface Category {
-  _id: string;
-  name: string;
-}
+import ProductDetailsModal from "@/components/ProductDetailsModal";
 
 interface Attribute {
-  _id: string;
-  name: string;
+  attributeName: string;
   value: string;
+  price: number;
+  inventory: number;
+  soldAs: string;
+  tax: string;
 }
 
 interface Product {
-  _id: string;
+  id: string;
   name: string;
-  category: Category;
+  category: string;
   attributes: Attribute[];
   image?: string;
+  brand?: string;
+  _id?: string;
 }
 
 export default function ProductListPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [search, setSearch] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
+  const [showModal, setShowModal] = useState(false);
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+
   const itemsPerPage = 5;
   const router = useRouter();
 
   const fetchProducts = async () => {
     try {
-      const res = await axios.get("/api/products");
+      const res = await axios.get("/api/dashboard/products");
       setProducts(res.data);
     } catch (err) {
       console.error(err);
@@ -57,6 +61,11 @@ export default function ProductListPage() {
       console.error(err);
       toast.error("Failed to delete product");
     }
+  };
+
+  const handleShowDetails = (product: Product) => {
+    setSelectedProduct(product);
+    setShowModal(true);
   };
 
   useEffect(() => {
@@ -116,65 +125,75 @@ export default function ProductListPage() {
                 <th className="p-3">Name</th>
                 <th className="p-3">Category</th>
                 <th className="p-3">Attributes</th>
-                <th className="p-3">Inventory & Price</th>
+                <th className="p-3">Details</th>
                 <th className="p-3 text-right">Action</th>
               </tr>
             </thead>
             <tbody>
-              {paginatedProducts.map((product, index) => (
-                <tr
-                  key={product._id}
-                  className="border-b border-gray-200 hover:bg-gray-50"
-                >
-                  <td className="p-3">
-                    {(currentPage - 1) * itemsPerPage + index + 1}
-                  </td>
-                  <td className="p-3">
-                    <img
-                      src={
-                        product.image ||
-                        "/inventory-system/public/images/image.png"
-                      }
-                      alt={product.name}
-                      className="w-10 h-10 object-cover rounded"
-                    />
-                  </td>
-                  <td className="p-3">{product.name}</td>
-                  <td className="p-3">{product.category?.name || "-"}</td>
-                  <td className="p-3">
-                    {product.attributes?.length > 0
-                      ? product.attributes
-                          .map((attr) => `${attr.name}: ${attr.value}`)
-                          .join(", ")
-                      : "-"}
-                  </td>
-                  <td className="p-3">
-                    <button className="border border-blue-500 text-blue-600 hover:bg-blue-100 px-3 py-1 rounded cursor-pointer text-sm">
-                      Check Inventory & Price
-                    </button>
-                  </td>
-                  <td className="p-3 text-right">
-                    <div className="flex justify-end gap-2">
+              {paginatedProducts.map((product, index) => {
+                const rowKey = product._id || `${product.name}-${index}`;
+                return (
+                  <tr
+                    key={rowKey}
+                    className="border-b border-gray-200 hover:bg-gray-50"
+                  >
+                    <td className="p-3">
+                      {(currentPage - 1) * itemsPerPage + index + 1}
+                    </td>
+                    <td className="p-3">
+                      <img
+                        src={product.image || "/images/image.png"}
+                        alt={product.name}
+                        className="w-10 h-10 object-cover rounded"
+                      />
+                    </td>
+                    <td className="p-3">{product.name}</td>
+                    <td className="p-3">{product.category || "-"}</td>
+                    <td className="p-3">
+                      {product.attributes?.length > 0
+                        ? product.attributes.map((attr, i) => (
+                            <div
+                              key={`${attr.attributeName}-${attr.value}-${i}`}
+                            >
+                              <strong>{attr.attributeName}</strong>:{" "}
+                              {attr.value}
+                            </div>
+                          ))
+                        : "-"}
+                    </td>
+                    <td className="p-3">
                       <button
-                        className="bg-blue-500 hover:bg-blue-600 text-white p-2 rounded"
-                        onClick={() =>
-                          router.push(`/dashboard/products/${product._id}/edit`)
-                        }
+                        className="border border-blue-500 text-blue-600 hover:bg-blue-100 px-3 py-1 rounded cursor-pointer text-sm"
+                        onClick={() => handleShowDetails(product)}
                       >
-                        <Pencil size={16} />
+                        More info
                       </button>
-                      <button
-                        onClick={() => handleDelete(product._id)}
-                        className="bg-red-500 hover:bg-red-600 text-white p-2 rounded"
-                      >
-                        <Trash2 size={16} />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
+                    </td>
+                    <td className="p-3 text-right">
+                      <div className="flex justify-end gap-2">
+                        <button
+                          className="bg-blue-500 hover:bg-blue-600 text-white p-2 rounded"
+                          onClick={() =>
+                            router.push(
+                              `/dashboard/products/${product._id}/edit`
+                            )
+                          }
+                        >
+                          <Pencil size={16} />
+                        </button>
+                        <button
+                          onClick={() => handleDelete(product._id!)}
+                          className="bg-red-500 hover:bg-red-600 text-white p-2 rounded"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
               {paginatedProducts.length === 0 && (
-                <tr>
+                <tr key="empty">
                   <td colSpan={7} className="text-center py-4 text-gray-500">
                     No products found.
                   </td>
@@ -205,6 +224,13 @@ export default function ProductListPage() {
           </div>
         </div>
       </main>
+
+      {/* Modal */}
+      <ProductDetailsModal
+        show={showModal}
+        onClose={() => setShowModal(false)}
+        product={selectedProduct}
+      />
     </div>
   );
 }
