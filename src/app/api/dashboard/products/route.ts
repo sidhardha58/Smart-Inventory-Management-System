@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { connect } from "@/dbConfig/dbConfig";
 import Product from "@/models/productModel";
-
-// Register Category model so `.populate("category")` works
 import "@/models/categoryModel";
+
+import path from "path";
+import fs from "fs/promises";
 
 export const config = {
   api: {
@@ -11,12 +12,12 @@ export const config = {
   },
 };
 
-// ✅ GET all products with category name and raw attributes
+// ✅ GET all products
 export async function GET() {
   await connect();
   try {
     const products = await Product.find()
-      .populate("category", "name") // get category name
+      .populate("category", "name")
       .sort({ createdAt: -1 });
 
     const formatted = products.map((product, index) => ({
@@ -45,7 +46,7 @@ export async function GET() {
   }
 }
 
-// ✅ POST product with embedded attributes
+// ✅ POST product (without brand)
 export async function POST(req: NextRequest) {
   await connect();
   try {
@@ -53,10 +54,9 @@ export async function POST(req: NextRequest) {
 
     const name = formData.get("name") as string;
     const category = formData.get("category") as string;
-    const brand = formData.get("brand") as string;
     const description = formData.get("description") as string;
-    const image = formData.get("image") as string;
     const attributesRaw = formData.get("attributes") as string;
+    const imageFile = formData.get("image") as File;
 
     if (!name || !category || !attributesRaw) {
       return NextResponse.json(
@@ -65,9 +65,10 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // Parse attributes JSON
     let attributes;
     try {
-      attributes = JSON.parse(attributesRaw); // should be an array of objects
+      attributes = JSON.parse(attributesRaw);
     } catch (err) {
       return NextResponse.json(
         { error: "Invalid attributes JSON" },
@@ -75,12 +76,29 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // Save image to /public/uploads and store path
+    let imagePath = "";
+    if (imageFile && typeof imageFile === "object") {
+      const bytes = await imageFile.arrayBuffer();
+      const buffer = Buffer.from(bytes);
+
+      const uploadsDir = path.join(process.cwd(), "public", "uploads");
+      await fs.mkdir(uploadsDir, { recursive: true });
+
+      const fileName = `${Date.now()}-${imageFile.name}`;
+      const fullPath = path.join(uploadsDir, fileName);
+
+      await fs.writeFile(fullPath, buffer);
+      imagePath = `/uploads/${fileName}`;
+    }
+
+    // Create product without brand
     const newProduct = await Product.create({
       name,
-      category,
       description,
-      image,
+      category,
       attributes,
+      image: imagePath,
     });
 
     return NextResponse.json({

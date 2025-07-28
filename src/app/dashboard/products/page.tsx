@@ -47,20 +47,8 @@ export default function ProductListPage() {
     }
   };
 
-  const handleDelete = async (id: string) => {
-    const confirmDelete = window.confirm(
-      "Are you sure you want to delete this product?"
-    );
-    if (!confirmDelete) return;
-
-    try {
-      await axios.delete(`/api/products/${id}`);
-      toast.success("Product deleted successfully");
-      fetchProducts();
-    } catch (err) {
-      console.error(err);
-      toast.error("Failed to delete product");
-    }
+  const handleDelete = (id: string) => {
+    router.push(`/dashboard/products/${id}/delete`);
   };
 
   const handleShowDetails = (product: Product) => {
@@ -175,14 +163,14 @@ export default function ProductListPage() {
                           className="bg-blue-500 hover:bg-blue-600 text-white p-2 rounded"
                           onClick={() =>
                             router.push(
-                              `/dashboard/products/${product._id}/edit`
+                              `/dashboard/products/${product.id}/edit`
                             )
                           }
                         >
                           <Pencil size={16} />
                         </button>
                         <button
-                          onClick={() => handleDelete(product._id!)}
+                          onClick={() => handleDelete(product.id!)}
                           className="bg-red-500 hover:bg-red-600 text-white p-2 rounded"
                         >
                           <Trash2 size={16} />

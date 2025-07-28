@@ -170,27 +170,32 @@ export default function AddProductPage() {
               )}
             </div>
 
-            {/* Image Upload */}
+            {/* Image */}
             <div>
               <label className="block font-medium mb-1">Image</label>
               <label className="inline-block bg-[#0077b6] hover:bg-[#005f94] text-white px-4 py-2 rounded cursor-pointer">
                 Choose File
                 <input
                   type="file"
+                  accept="image/*"
+                  className="hidden"
                   onChange={(e) =>
                     setFormData({
                       ...formData,
                       image: e.target.files?.[0] || null,
+                      imagePreview: e.target.files?.[0]
+                        ? URL.createObjectURL(e.target.files[0])
+                        : formData.imagePreview,
                     })
                   }
-                  className="hidden"
-                  accept="image/*"
                 />
               </label>
-              {formData.image && (
-                <p className="mt-2 text-sm text-gray-600">
-                  Selected: {formData.image.name}
-                </p>
+              {formData.imagePreview && (
+                <img
+                  src={formData.imagePreview}
+                  alt="Preview"
+                  className="mt-2 w-24 h-24 object-cover"
+                />
               )}
             </div>
 
