@@ -189,7 +189,7 @@ export default function EditProductPage() {
             <div>
               <label className="block font-medium mb-1">Image</label>
               <label className="inline-block bg-[#0077b6] hover:bg-[#005f94] text-white px-4 py-2 rounded cursor-pointer">
-                Choose File
+                Change Image
                 <input
                   type="file"
                   accept="image/*"

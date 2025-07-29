@@ -219,7 +219,7 @@ const AttributeForm: React.FC<AttributeFormProps> = ({
                   }`}
                 />
               </div>
-              {dropdownOptions("soldAs", ["Piece", "Pack"])}
+              {dropdownOptions("soldAs", ["Piece", "Pack", "Kg"])}
             </div>
 
             {/* Price Input */}
