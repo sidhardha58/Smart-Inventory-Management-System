@@ -3,19 +3,33 @@ import { connect } from "@/dbConfig/dbConfig";
 import Product from "@/models/productModel";
 import "@/models/categoryModel";
 
-import path from "path";
-import fs from "fs/promises";
-
-export const config = {
-  api: {
-    bodyParser: false,
-  },
-};
-
-// ✅ GET all products
-export async function GET() {
+export async function GET(req: NextRequest) {
   await connect();
+
+  const { searchParams } = new URL(req.url);
+  const categoryId = searchParams.get("category");
+
   try {
+    // If category is specified → fetch products in that category only (used in Add Sale page)
+    if (categoryId) {
+      const filteredProducts = await Product.find({ category: categoryId });
+
+      const simplified = filteredProducts.map((p) => ({
+        _id: p._id,
+        name: p.name,
+        price: p.attributes?.[0]?.price || 0,
+        soldAs: p.attributes?.[0]?.soldAs || "unit",
+        attributes:
+          p.attributes?.map((attr: any) => ({
+            name: attr.attribute || "N/A",
+            value: attr.value || "",
+          })) || [],
+      }));
+
+      return NextResponse.json(simplified);
+    }
+
+    // Default: return all products for the Product List page
     const products = await Product.find()
       .populate("category", "name")
       .sort({ createdAt: -1 });
@@ -41,74 +55,6 @@ export async function GET() {
     console.error("GET error:", error);
     return NextResponse.json(
       { error: "Failed to fetch products" },
-      { status: 500 }
-    );
-  }
-}
-
-// ✅ POST product (without brand)
-export async function POST(req: NextRequest) {
-  await connect();
-  try {
-    const formData = await req.formData();
-
-    const name = formData.get("name") as string;
-    const category = formData.get("category") as string;
-    const description = formData.get("description") as string;
-    const attributesRaw = formData.get("attributes") as string;
-    const imageFile = formData.get("image") as File;
-
-    if (!name || !category || !attributesRaw) {
-      return NextResponse.json(
-        { error: "Missing required fields" },
-        { status: 400 }
-      );
-    }
-
-    // Parse attributes JSON
-    let attributes;
-    try {
-      attributes = JSON.parse(attributesRaw);
-    } catch (err) {
-      return NextResponse.json(
-        { error: "Invalid attributes JSON" },
-        { status: 400 }
-      );
-    }
-
-    // Save image to /public/uploads and store path
-    let imagePath = "";
-    if (imageFile && typeof imageFile === "object") {
-      const bytes = await imageFile.arrayBuffer();
-      const buffer = Buffer.from(bytes);
-
-      const uploadsDir = path.join(process.cwd(), "public", "uploads");
-      await fs.mkdir(uploadsDir, { recursive: true });
-
-      const fileName = `${Date.now()}-${imageFile.name}`;
-      const fullPath = path.join(uploadsDir, fileName);
-
-      await fs.writeFile(fullPath, buffer);
-      imagePath = `/uploads/${fileName}`;
-    }
-
-    // Create product without brand
-    const newProduct = await Product.create({
-      name,
-      description,
-      category,
-      attributes,
-      image: imagePath,
-    });
-
-    return NextResponse.json({
-      message: "Product created",
-      product: newProduct,
-    });
-  } catch (error) {
-    console.error("POST error:", error);
-    return NextResponse.json(
-      { error: "Failed to create product" },
       { status: 500 }
     );
   }

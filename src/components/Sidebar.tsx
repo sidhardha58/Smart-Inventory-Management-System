@@ -145,9 +145,18 @@ const Sidebar = () => {
           </div>
           <div className="hidden group-hover:block bg-white text-black rounded-md shadow-md mt-1 ml-6 w-48">
             <div className="h-[2px] bg-[#0077b6] mb-1" />
-            <div className="px-4 py-2 hover:bg-gray-100 hover:text-[#0077b6] cursor-pointer rounded-md">
+            <a
+              href="/dashboard/sales"
+              className="block px-4 py-2 hover:bg-gray-100 hover:text-[#0077b6] cursor-pointer rounded-md"
+            >
               Sales List
-            </div>
+            </a>
+            <a
+              href="/dashboard/sales/add"
+              className="block px-4 py-2 hover:bg-gray-100 hover:text-[#0077b6] cursor-pointer rounded-md"
+            >
+              Add Sale
+            </a>
           </div>
         </div>
 
