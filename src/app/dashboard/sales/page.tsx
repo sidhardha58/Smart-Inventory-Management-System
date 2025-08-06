@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import axios from "axios";
-import { Trash2, Search } from "lucide-react";
+import { Search } from "lucide-react";
 import Sidebar from "@/components/Sidebar";
 import { toast } from "react-hot-toast";
 import { useRouter } from "next/navigation";
@@ -16,6 +16,14 @@ interface Sale {
   quantity: number;
   tax: number;
   totalPrice: number;
+}
+
+interface GroupedSale {
+  productName: string;
+  price: number;
+  soldAs: string;
+  totalQuantity: number;
+  totalSales: number;
 }
 
 export default function SalesListPage() {
@@ -39,12 +47,39 @@ export default function SalesListPage() {
     fetchSales();
   }, []);
 
-  const filteredSales = sales.filter((sale) =>
+  // Group sales by productName + price + soldAs
+  const groupSales = (sales: Sale[]): GroupedSale[] => {
+    const grouped: Record<string, GroupedSale> = {};
+
+    for (const sale of sales) {
+      const key = `${sale.productName}-${sale.price}-${sale.soldAs}`;
+      if (!grouped[key]) {
+        grouped[key] = {
+          productName: sale.productName,
+          price: sale.price,
+          soldAs: sale.soldAs,
+          totalQuantity: 0,
+          totalSales: 0,
+        };
+      }
+
+      grouped[key].totalQuantity += sale.quantity;
+      grouped[key].totalSales += sale.totalPrice;
+    }
+
+    return Object.values(grouped);
+  };
+
+  const groupedSales = groupSales(sales);
+
+  // Filter by search
+  const filteredGroupedSales = groupedSales.filter((sale) =>
     sale.productName.toLowerCase().includes(search.toLowerCase())
   );
 
-  const totalPages = Math.ceil(filteredSales.length / itemsPerPage);
-  const paginatedSales = filteredSales.slice(
+  // Pagination
+  const totalPages = Math.ceil(filteredGroupedSales.length / itemsPerPage);
+  const paginatedGroupedSales = filteredGroupedSales.slice(
     (currentPage - 1) * itemsPerPage,
     currentPage * itemsPerPage
   );
@@ -56,7 +91,7 @@ export default function SalesListPage() {
         <div className="bg-white p-6 rounded shadow">
           {/* Header */}
           <div className="flex justify-between items-center mb-4">
-            <h3 className="text-lg font-bold text-[#0077b6]">Sales List</h3>
+            <h3 className="text-lg font-bold text-[#0077b6]">Sales Summary</h3>
             <button
               onClick={() => router.push("/dashboard/sales/add")}
               className="bg-[#0077b6] hover:bg-[#005f94] text-white px-4 py-2 rounded"
@@ -83,10 +118,10 @@ export default function SalesListPage() {
             />
           </div>
 
-          {/* Count (Optional) */}
+          {/* Count */}
           <p className="text-sm text-gray-600 mb-2">
-            Showing {filteredSales.length} sale
-            {filteredSales.length !== 1 && "s"} found
+            Showing {filteredGroupedSales.length} product
+            {filteredGroupedSales.length !== 1 && "s"} found
           </p>
 
           {/* Table */}
@@ -94,51 +129,32 @@ export default function SalesListPage() {
             <thead className="bg-[#0077b6] text-white">
               <tr>
                 <th className="p-3 w-[60px]">#</th>
-                <th className="p-3">Sale ID</th>
                 <th className="p-3">Product</th>
-                <th className="p-3">Price</th>
-                <th className="p-3">Quantity</th>
-                <th className="p-3">Total Price</th>
-                <th className="p-3 text-right">Action</th>
+                <th className="p-3">Unit Price</th>
+                <th className="p-3">Total Quantity</th>
+                <th className="p-3">Total Sales</th>
               </tr>
             </thead>
             <tbody>
-              {paginatedSales.map((sale, index) => (
+              {paginatedGroupedSales.map((sale, index) => (
                 <tr
-                  key={sale._id}
+                  key={`${sale.productName}-${sale.price}-${sale.soldAs}`}
                   className="border-b border-gray-200 hover:bg-gray-50"
                 >
                   <td className="p-3">
                     {(currentPage - 1) * itemsPerPage + index + 1}
                   </td>
-                  <td className="p-3">{sale.saleId}</td>
                   <td className="p-3">{sale.productName}</td>
                   <td className="p-3">
                     ₹{sale.price}/{sale.soldAs}
                   </td>
-                  <td className="p-3">{sale.quantity}</td>
-                  <td className="p-3">
-                    ₹
-                    {(
-                      sale.totalPrice +
-                      (sale.totalPrice * sale.tax) / 100
-                    ).toFixed(2)}
-                  </td>
-                  <td className="p-3 text-right">
-                    <button
-                      onClick={() =>
-                        router.push(`/dashboard/sales/${sale._id}/delete`)
-                      }
-                      className="bg-red-500 hover:bg-red-600 text-white p-2 rounded"
-                    >
-                      <Trash2 size={16} />
-                    </button>
-                  </td>
+                  <td className="p-3">{sale.totalQuantity}</td>
+                  <td className="p-3">₹{sale.totalSales.toFixed(2)}</td>
                 </tr>
               ))}
-              {paginatedSales.length === 0 && (
+              {paginatedGroupedSales.length === 0 && (
                 <tr>
-                  <td colSpan={7} className="text-center py-4 text-gray-500">
+                  <td colSpan={5} className="text-center py-4 text-gray-500">
                     No sales found.
                   </td>
                 </tr>

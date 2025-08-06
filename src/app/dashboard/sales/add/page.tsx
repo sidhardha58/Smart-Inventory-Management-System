@@ -5,19 +5,19 @@ import axios from "axios";
 import Sidebar from "@/components/Sidebar";
 import { useRouter } from "next/navigation";
 import { toast } from "react-hot-toast";
-import { ChevronRight, Trash2, Plus } from "lucide-react";
-
-interface Category {
-  _id: string;
-  name: string;
-}
+import { Trash2, Plus, Search } from "lucide-react";
 
 interface Product {
   _id: string;
   name: string;
-  attributes: { name: string; value: string }[];
-  soldAs: string;
-  price: number;
+  category?: string;
+  attributes: {
+    name: string;
+    value: string;
+    price: number;
+    tax: number;
+    soldAs?: string;
+  }[];
 }
 
 interface SaleItem {
@@ -26,69 +26,64 @@ interface SaleItem {
 }
 
 export default function AddSalePage() {
-  const [categories, setCategories] = useState<Category[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [productCache, setProductCache] = useState<{ [key: string]: Product }>(
     {}
   );
-  const [selectedCategory, setSelectedCategory] = useState("");
   const [selectedProductId, setSelectedProductId] = useState("");
   const [quantity, setQuantity] = useState(1);
   const [salesList, setSalesList] = useState<SaleItem[]>([]);
-  const [dropdownOpen, setDropdownOpen] = useState({
-    category: false,
-    product: false,
-  });
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [search, setSearch] = useState("");
 
   const formRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
 
   useEffect(() => {
-    axios.get("/api/dashboard/categories").then((res) => {
-      const cats = Array.isArray(res.data) ? res.data : res.data.categories;
-      setCategories(Array.isArray(cats) ? cats : []);
-    });
-  }, []);
-
-  useEffect(() => {
-    if (!selectedCategory) {
-      setProducts([]);
-      return;
-    }
-    axios
-      .get(`/api/dashboard/products?category=${selectedCategory}`)
-      .then((res) => {
-        const fetched = Array.isArray(res.data) ? res.data : [];
+    const fetchProducts = async () => {
+      try {
+        const res = await axios.get("/api/dashboard/products");
+        const fetched: Product[] = Array.isArray(res.data) ? res.data : [];
         setProducts(fetched);
 
-        const newCache: { [key: string]: Product } = {};
-        for (const prod of fetched) {
-          newCache[prod._id] = prod;
-        }
-        setProductCache((prev) => ({ ...prev, ...newCache }));
-      });
-  }, [selectedCategory]);
+        const cache: { [key: string]: Product } = {};
+        fetched.forEach((p) => (cache[p._id] = p));
+        setProductCache(cache);
+      } catch (err) {
+        toast.error("Failed to fetch products.");
+      }
+    };
+    fetchProducts();
+  }, []);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (formRef.current && !formRef.current.contains(event.target as Node)) {
-        setDropdownOpen({ category: false, product: false });
+        setDropdownOpen(false);
       }
     };
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  const filteredProducts = search
+    ? products.filter((p) =>
+        p.name.toLowerCase().includes(search.toLowerCase())
+      )
+    : products;
+
   const addToSalesList = () => {
-    if (!selectedProductId || !quantity) {
-      toast.error("Please select product and quantity.");
+    if (!selectedProductId || quantity <= 0) {
+      toast.error("Please select a product and enter a valid quantity.");
       return;
     }
+
     setSalesList((prev) => [
       ...prev,
       { productId: selectedProductId, quantity },
     ]);
     setSelectedProductId("");
+    setSearch("");
     setQuantity(1);
   };
 
@@ -108,38 +103,23 @@ export default function AddSalePage() {
       });
       toast.success("Sales added successfully.");
       router.push("/dashboard/sales");
-    } catch (error) {
+    } catch (err) {
       toast.error("Failed to add sales.");
     }
   };
 
-  const dropdownStyle = `absolute z-10 bg-white text-black rounded-md shadow-md mt-1 w-full max-h-40 overflow-y-auto`;
+  // ✅ Correct tax-included grand total calculation
+  const totalCost = salesList.reduce((sum, item) => {
+    const prod = productCache[item.productId];
+    if (!prod) return sum;
 
-  const renderDropdown = (
-    field: "category" | "product",
-    options: { value: string; label: string }[],
-    onSelect: (val: string) => void,
-    selected: string
-  ) =>
-    dropdownOpen[field] && (
-      <div className={dropdownStyle}>
-        <div className="h-[2px] bg-[#0077b6] mb-1" />
-        {options.map((opt) => (
-          <div
-            key={opt.value + opt.label}
-            onClick={() => {
-              onSelect(opt.value);
-              setDropdownOpen({ ...dropdownOpen, [field]: false });
-            }}
-            className={`px-4 py-2 cursor-pointer hover:bg-gray-100 hover:text-[#0077b6] ${
-              selected === opt.value ? "bg-gray-100 text-[#0077b6]" : ""
-            }`}
-          >
-            {opt.label}
-          </div>
-        ))}
-      </div>
-    );
+    const attr = prod.attributes?.[0] || {};
+    const unitPrice = Number(attr.price) || 0;
+    const taxPercent = Number(attr.tax) || 0;
+    const unitTax = (unitPrice * taxPercent) / 100;
+
+    return sum + (unitPrice + unitTax) * item.quantity;
+  }, 0);
 
   return (
     <div className="flex min-h-screen bg-gray-100">
@@ -151,93 +131,77 @@ export default function AddSalePage() {
         >
           <h2 className="text-2xl font-bold text-[#0077b6] mb-6">Add Sales</h2>
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-            {/* Category Dropdown */}
-            <div className="relative">
-              <label className="block font-medium mb-1">Category</label>
-              <div
-                className="flex items-center justify-between border px-3 py-2 rounded-md cursor-pointer hover:bg-gray-200 bg-white"
-                onClick={() =>
-                  setDropdownOpen({
-                    ...dropdownOpen,
-                    category: !dropdownOpen.category,
-                    product: false,
-                  })
-                }
-              >
-                <span
-                  className={selectedCategory ? "text-black" : "text-gray-400"}
-                >
-                  {categories.find((c) => c._id === selectedCategory)?.name ||
-                    "Select Category"}
-                </span>
-                <ChevronRight
-                  className={`w-4 h-4 text-gray-600 transition-transform duration-200 ${
-                    dropdownOpen.category ? "rotate-90" : ""
-                  }`}
-                />
-              </div>
-              {renderDropdown(
-                "category",
-                categories.map((cat) => ({
-                  value: cat._id,
-                  label: cat.name,
-                })),
-                (val) => {
-                  setSelectedCategory(val);
-                  setSelectedProductId("");
-                },
-                selectedCategory
-              )}
-            </div>
-
-            {/* Product Dropdown */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+            {/* Product Search */}
             <div className="relative">
               <label className="block font-medium mb-1">Product</label>
-              <div
-                className="flex items-center justify-between border px-3 py-2 rounded-md cursor-pointer hover:bg-gray-200 bg-white w-80"
-                onClick={() =>
-                  setDropdownOpen({
-                    ...dropdownOpen,
-                    product: !dropdownOpen.product,
-                    category: false,
-                  })
+              <input
+                type="text"
+                placeholder="Select Product"
+                value={
+                  selectedProductId
+                    ? `${productCache[selectedProductId]?.name || ""} → ${
+                        productCache[selectedProductId]?.attributes
+                          ?.map((a) => a.value)
+                          .join(" → ") || ""
+                      } → ₹${
+                        productCache[selectedProductId]?.attributes?.[0]
+                          ?.price || 0
+                      }/${
+                        productCache[selectedProductId]?.attributes?.[0]
+                          ?.soldAs || "unit"
+                      }`
+                    : search
                 }
-              >
-                <span
-                  className={selectedProductId ? "text-black" : "text-gray-400"}
-                >
-                  {selectedProductId
-                    ? products.find((p) => p._id === selectedProductId)?.name
-                    : !selectedCategory
-                    ? "Please select a category first"
-                    : products.length === 0
-                    ? "No products in this category"
-                    : "Select Product"}
-                </span>
-                <ChevronRight
-                  className={`w-4 h-4 text-gray-600 transition-transform duration-200 ${
-                    dropdownOpen.product ? "rotate-90" : ""
-                  }`}
-                />
-              </div>
-              {renderDropdown(
-                "product",
-                !selectedCategory
-                  ? [{ value: "", label: "Please select a category first" }]
-                  : products.length === 0
-                  ? [{ value: "", label: "No products in this category" }]
-                  : products.map((prod) => ({
-                      value: prod._id,
-                      label: `${prod.name} → ${prod.attributes
-                        .map((a) => a.value)
-                        .join(" ")} → ₹${prod.price}/${prod.soldAs}`,
-                    })),
-                (val) => setSelectedProductId(val),
-                selectedProductId
+                onChange={(e) => {
+                  setSearch(e.target.value);
+                  setSelectedProductId("");
+                  setDropdownOpen(true);
+                }}
+                onFocus={() => setDropdownOpen(true)}
+                className="border border-gray-300 px-3 py-2 rounded w-full pr-10"
+              />
+              <Search
+                className="absolute right-3 bottom-0 transform -translate-y-1/2 text-gray-500 pointer-events-none"
+                size={20}
+              />
+              {dropdownOpen && (
+                <div className="absolute z-10 bg-white w-full mt-1 shadow-md rounded max-h-40 overflow-y-auto">
+                  <div className="px-4 py-2 text-gray-500 italic">
+                    Select Product
+                  </div>
+                  {filteredProducts.length === 0 ? (
+                    <div className="px-4 py-2 text-gray-500">
+                      No products found
+                    </div>
+                  ) : (
+                    filteredProducts.map((prod) => {
+                      const attr = prod.attributes?.[0];
+                      const attrStr = prod.attributes
+                        ?.map((a) => a.value)
+                        .join(" → ");
+                      const priceStr =
+                        attr?.price !== undefined ? `₹${attr.price}` : "₹0";
+                      const soldAsStr = attr?.soldAs || "unit";
+
+                      return (
+                        <div
+                          key={prod._id}
+                          onClick={() => {
+                            setSelectedProductId(prod._id);
+                            setSearch("");
+                            setDropdownOpen(false);
+                          }}
+                          className="px-4 py-2 cursor-pointer hover:bg-gray-100"
+                        >
+                          {`${prod.name} → ${attrStr} → ${priceStr}/${soldAsStr}`}
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
               )}
             </div>
-            <br />
 
             {/* Quantity Input */}
             <div>
@@ -268,7 +232,7 @@ export default function AddSalePage() {
             </button>
           </div>
 
-          {/* Preview Table */}
+          {/* Sales Table */}
           {salesList.length > 0 && (
             <div className="mt-6">
               <table className="w-full text-sm border rounded">
@@ -276,18 +240,37 @@ export default function AddSalePage() {
                   <tr>
                     <th className="p-2 text-left">Product</th>
                     <th className="p-2 text-left">Quantity</th>
+                    <th className="p-2 text-left">Category</th>
+                    <th className="p-2 text-left">Tax (%)</th>
+                    <th className="p-2 text-left">Price with Tax (₹)</th>
+                    <th className="p-2 text-left">Total (₹)</th>
                     <th className="p-2 text-left">Action</th>
                   </tr>
                 </thead>
                 <tbody>
                   {salesList.map((item, index) => {
-                    const product = productCache[item.productId];
+                    const prod = productCache[item.productId];
+                    if (!prod) return null;
+
+                    const attr = prod.attributes?.[0] || {};
+                    const unitPrice = Number(attr.price) || 0;
+                    const taxPercent = Number(attr.tax) || 0;
+                    const unitTax = (unitPrice * taxPercent) / 100;
+                    const total = (unitPrice + unitTax) * item.quantity;
+
                     return (
-                      <tr key={index} className="border-t">
-                        <td className="p-2">
-                          {product?.name || "Unknown Product"}
-                        </td>
+                      <tr
+                        key={`${item.productId}-${index}`}
+                        className="border-t"
+                      >
+                        <td className="p-2">{prod.name}</td>
                         <td className="p-2">{item.quantity}</td>
+                        <td className="p-2">{prod.category || "N/A"}</td>
+                        <td className="p-2">{taxPercent}%</td>
+                        <td className="p-2">
+                          {(unitPrice + unitTax).toFixed(2)}
+                        </td>
+                        <td className="p-2">{total.toFixed(2)}</td>
                         <td className="p-2">
                           <button
                             onClick={() => removeFromSalesList(index)}
@@ -301,10 +284,17 @@ export default function AddSalePage() {
                   })}
                 </tbody>
               </table>
+
+              {/* Grand Total */}
+              <div className="bg-gray-100 p-4 rounded mt-4">
+                <p className="font-bold text-lg text-[#0077b6] text-right">
+                  Grand Total: ₹{totalCost.toFixed(2)}
+                </p>
+              </div>
             </div>
           )}
 
-          {/* Submit + Back Buttons */}
+          {/* Action Buttons */}
           <div className="mt-8 flex gap-4">
             <button
               onClick={() => router.push("/dashboard/sales")}

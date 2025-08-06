@@ -10,7 +10,7 @@ export async function GET(req: NextRequest) {
   const categoryId = searchParams.get("category");
 
   try {
-    // If category is specified → fetch products in that category only (used in Add Sale page)
+    // ✅ If filtering by category
     if (categoryId) {
       const filteredProducts = await Product.find({ category: categoryId });
 
@@ -29,17 +29,22 @@ export async function GET(req: NextRequest) {
       return NextResponse.json(simplified);
     }
 
-    // Default: return all products for the Product List page
+    // ✅ Otherwise return all products, formatted with all fields
     const products = await Product.find()
       .populate("category", "name")
       .sort({ createdAt: -1 });
 
     const formatted = products.map((product, index) => ({
-      id: product._id,
+      _id: product._id,
       index: index + 1,
       name: product.name,
       image: product.image,
       category: product.category?.name || "N/A",
+
+      // ✅ top-level price and soldAs for frontend compatibility
+      price: product.attributes?.[0]?.price || 0,
+      soldAs: product.attributes?.[0]?.soldAs || "unit",
+
       attributes: (product.attributes || []).map((attr: any) => ({
         attributeName: attr.attribute || "N/A",
         value: attr.value || "",
