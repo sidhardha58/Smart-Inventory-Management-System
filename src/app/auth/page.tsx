@@ -9,6 +9,8 @@ import "react-toastify/dist/ReactToastify.css";
 import Link from "next/link";
 import { Mail, Eye, EyeOff, User } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { signInWithPopup, GoogleAuthProvider } from "firebase/auth";
+import { auth } from "@/lib/firebase";
 
 const Auth = () => {
   const [isSignUp, setIsSignUp] = useState(false);
@@ -56,6 +58,29 @@ const Auth = () => {
       toast.error(message);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleGoogleSignIn = async () => {
+    try {
+      const provider = new GoogleAuthProvider();
+      const result = await signInWithPopup(auth, provider);
+      const user = result.user;
+
+      const res = await axios.post("/api/auth/save-user", {
+        _id: user.uid,
+        username: user.displayName || "User",
+        email: user.email,
+        profileImageURL: user.photoURL,
+      });
+
+      toast.success(`Welcome, ${res.data.user.username}`);
+      setTimeout(() => {
+        window.location.href = "/";
+      }, 1500);
+    } catch (error) {
+      console.error("Google sign-in error:", error);
+      toast.error("Google sign-in failed. Try again.");
     }
   };
 
@@ -204,7 +229,7 @@ const Auth = () => {
               <button
                 type="button"
                 className="w-full border border-gray-300 py-2 rounded-lg flex items-center justify-center gap-2 hover:bg-gray-100 transition cursor-pointer"
-                onClick={() => toast.info("Google sign-in coming soon")}
+                onClick={handleGoogleSignIn}
               >
                 <Image
                   src="https://www.svgrepo.com/show/475656/google-color.svg"
