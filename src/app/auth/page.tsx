@@ -47,7 +47,7 @@ const Auth = () => {
           password: form.password,
         });
 
-        toast.success("Logged in successfully!");
+        toast.success(`Welcome, ${res.data.user.username}`);
         setTimeout(() => {
           window.location.href = "/";
         }, 2000);

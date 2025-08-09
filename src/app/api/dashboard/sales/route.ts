@@ -2,12 +2,14 @@ import { NextResponse, NextRequest } from "next/server";
 import { connect } from "@/dbConfig/dbConfig";
 import Sale from "@/models/salesModel";
 import Product from "@/models/productModel";
+import { getUserFromToken } from "@/lib/getUserFromToken";
 
-// ✅ GET: Fetch all sales
+// ✅ GET: Fetch all sales for current user
 export async function GET(req: NextRequest) {
   try {
     await connect();
-    const sales = await Sale.find().sort({ createdAt: -1 });
+    const user = await getUserFromToken(req); // ✅ Await and pass req
+    const sales = await Sale.find({ userId: user.id }).sort({ createdAt: -1 });
     return NextResponse.json(sales);
   } catch (error) {
     console.error("Failed to fetch sales:", error);
@@ -19,12 +21,13 @@ export async function GET(req: NextRequest) {
 }
 
 // ✅ POST: Create one or more sales
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
   try {
     await connect();
+    const user = await getUserFromToken(req); // ✅ Await and pass req
     const body = await req.json();
 
-    // Check if it's a single sale (backward compatibility)
+    // Single sale
     if (body.productId && body.quantity) {
       const { productId, quantity, tax = 0 } = body;
 
@@ -41,7 +44,9 @@ export async function POST(req: Request) {
       const soldAs = attribute?.soldAs || "Unit";
       const appliedTax = attribute?.tax ?? tax;
 
-      const lastSale = await Sale.findOne().sort({ saleId: -1 });
+      const lastSale = await Sale.findOne({ userId: user.id }).sort({
+        saleId: -1,
+      });
       const newSaleId = lastSale ? lastSale.saleId + 1 : 1;
 
       const totalPrice = price * quantity * (1 + appliedTax / 100);
@@ -55,6 +60,7 @@ export async function POST(req: Request) {
         quantity,
         tax: appliedTax,
         totalPrice,
+        userId: user.id,
       });
 
       return NextResponse.json(
@@ -63,7 +69,7 @@ export async function POST(req: Request) {
       );
     }
 
-    // ✅ Multiple products handling
+    // Multiple sales
     const { items } = body;
 
     if (!Array.isArray(items) || items.length === 0) {
@@ -73,7 +79,9 @@ export async function POST(req: Request) {
       );
     }
 
-    const lastSale = await Sale.findOne().sort({ saleId: -1 });
+    const lastSale = await Sale.findOne({ userId: user.id }).sort({
+      saleId: -1,
+    });
     let currentSaleId = lastSale ? lastSale.saleId + 1 : 1;
 
     const saleRecords = [];
@@ -102,6 +110,7 @@ export async function POST(req: Request) {
         quantity,
         tax: appliedTax,
         totalPrice,
+        userId: user.id,
       });
 
       saleRecords.push(sale);
