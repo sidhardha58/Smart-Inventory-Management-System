@@ -4,10 +4,16 @@ import { NextRequest, NextResponse } from "next/server";
 import "@/models/categoryModel";
 
 // ✅ GET: Fetch a product by ID
-export async function GET(req: NextRequest) {
+export async function GET(
+  req: NextRequest,
+  { params }: { params: { id: string } }
+) {
   await connect();
-  const url = new URL(req.url);
-  const id = url.pathname.split("/").pop();
+  const { id } = params;
+
+  if (!id || id === "undefined") {
+    return NextResponse.json({ error: "Invalid ID" }, { status: 400 });
+  }
 
   try {
     const product = await Product.findById(id).populate("category", "name");
@@ -45,9 +51,10 @@ export async function GET(req: NextRequest) {
 // ✅ PUT: Update a product
 export async function PUT(
   req: NextRequest,
-  { params: routeParams }: { params: { id: string } }
+  { params }: { params: { id: string } }
 ) {
   await connect();
+  const { id } = params;
 
   try {
     const contentType = req.headers.get("content-type");
@@ -67,7 +74,7 @@ export async function PUT(
     const attributes = JSON.parse(formData.get("attributes") as string);
     const image = formData.get("image") as File | null;
 
-    const product = await Product.findById(routeParams.id);
+    const product = await Product.findById(id);
     if (!product) {
       return NextResponse.json({ error: "Product not found" }, { status: 404 });
     }
@@ -98,10 +105,16 @@ export async function PUT(
 }
 
 // ✅ DELETE: Remove product by ID
-export async function DELETE(req: NextRequest) {
+export async function DELETE(
+  req: NextRequest,
+  { params }: { params: { id: string } }
+) {
   await connect();
-  const url = new URL(req.url);
-  const id = url.pathname.split("/").pop();
+  const { id } = params;
+
+  if (!id || id === "undefined") {
+    return NextResponse.json({ error: "Invalid ID" }, { status: 400 });
+  }
 
   try {
     const deleted = await Product.findByIdAndDelete(id);

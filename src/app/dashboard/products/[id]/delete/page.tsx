@@ -12,23 +12,29 @@ export default function DeleteProductPage() {
   const [productName, setProductName] = useState("");
 
   useEffect(() => {
+    if (!id || id === "undefined") return;
+
     const fetchProduct = async () => {
       try {
         const res = await axios.get(`/api/dashboard/products/${id}`);
         if (res.data?.name) setProductName(res.data.name);
       } catch (err) {
         console.error("Failed to fetch product:", err);
+        toast.error("Failed to load product details");
       }
     };
+
     fetchProduct();
   }, [id]);
 
   const handleDelete = async () => {
+    if (!id || id === "undefined") {
+      toast.error("Invalid product ID");
+      return;
+    }
+
     try {
-      await axios.delete(`/api/dashboard/products/${id}`, {
-        data: { id },
-        headers: { "Content-Type": "application/json" },
-      });
+      await axios.delete(`/api/dashboard/products/${id}`);
       toast.success("Product deleted successfully");
       router.push("/dashboard/products");
     } catch (err) {

@@ -24,7 +24,7 @@ interface Product {
   attributes: Attribute[];
   image?: string;
   brand?: string;
-  _id?: string;
+  _id: string;
 }
 
 export default function ProductListPage() {
@@ -40,7 +40,11 @@ export default function ProductListPage() {
   const fetchProducts = async () => {
     try {
       const res = await axios.get("/api/dashboard/products");
-      setProducts(res.data);
+      const normalized = res.data.map((p: any) => ({
+        ...p,
+        id: p._id, // normalize _id to id
+      }));
+      setProducts(normalized);
     } catch (err) {
       console.error(err);
       toast.error("Failed to fetch products");
@@ -48,6 +52,10 @@ export default function ProductListPage() {
   };
 
   const handleDelete = (id: string) => {
+    if (!id) {
+      toast.error("Invalid product ID");
+      return;
+    }
     router.push(`/dashboard/products/${id}/delete`);
   };
 
@@ -118,68 +126,60 @@ export default function ProductListPage() {
               </tr>
             </thead>
             <tbody>
-              {paginatedProducts.map((product, index) => {
-                const rowKey = product._id || `${product.name}-${index}`;
-                return (
-                  <tr
-                    key={rowKey}
-                    className="border-b border-gray-200 hover:bg-gray-50"
-                  >
-                    <td className="p-3">
-                      {(currentPage - 1) * itemsPerPage + index + 1}
-                    </td>
-                    <td className="p-3">
-                      <img
-                        src={product.image || "/images/image.png"}
-                        alt={product.name}
-                        className="w-10 h-10 object-cover rounded"
-                      />
-                    </td>
-                    <td className="p-3">{product.name}</td>
-                    <td className="p-3">{product.category || "-"}</td>
-                    <td className="p-3">
-                      {product.attributes?.length > 0
-                        ? product.attributes.map((attr, i) => (
-                            <div
-                              key={`${attr.attributeName}-${attr.value}-${i}`}
-                            >
-                              <strong>{attr.attributeName}</strong>:{" "}
-                              {attr.value}
-                            </div>
-                          ))
-                        : "-"}
-                    </td>
-                    <td className="p-3">
+              {paginatedProducts.map((product, index) => (
+                <tr
+                  key={product._id}
+                  className="border-b border-gray-200 hover:bg-gray-50"
+                >
+                  <td className="p-3">
+                    {(currentPage - 1) * itemsPerPage + index + 1}
+                  </td>
+                  <td className="p-3">
+                    <img
+                      src={product.image || "/images/image.png"}
+                      alt={product.name}
+                      className="w-10 h-10 object-cover rounded"
+                    />
+                  </td>
+                  <td className="p-3">{product.name}</td>
+                  <td className="p-3">{product.category || "-"}</td>
+                  <td className="p-3">
+                    {product.attributes?.length > 0
+                      ? product.attributes.map((attr, i) => (
+                          <div key={`${attr.attributeName}-${attr.value}-${i}`}>
+                            <strong>{attr.attributeName}</strong>: {attr.value}
+                          </div>
+                        ))
+                      : "-"}
+                  </td>
+                  <td className="p-3">
+                    <button
+                      className="border border-blue-500 text-blue-600 hover:bg-blue-100 px-3 py-1 rounded cursor-pointer text-sm"
+                      onClick={() => handleShowDetails(product)}
+                    >
+                      More info
+                    </button>
+                  </td>
+                  <td className="p-3 text-right">
+                    <div className="flex justify-end gap-2">
                       <button
-                        className="border border-blue-500 text-blue-600 hover:bg-blue-100 px-3 py-1 rounded cursor-pointer text-sm"
-                        onClick={() => handleShowDetails(product)}
+                        className="bg-blue-500 hover:bg-blue-600 text-white p-2 rounded"
+                        onClick={() =>
+                          router.push(`/dashboard/products/${product._id}/edit`)
+                        }
                       >
-                        More info
+                        <Pencil size={16} />
                       </button>
-                    </td>
-                    <td className="p-3 text-right">
-                      <div className="flex justify-end gap-2">
-                        <button
-                          className="bg-blue-500 hover:bg-blue-600 text-white p-2 rounded"
-                          onClick={() =>
-                            router.push(
-                              `/dashboard/products/${product.id}/edit`
-                            )
-                          }
-                        >
-                          <Pencil size={16} />
-                        </button>
-                        <button
-                          onClick={() => handleDelete(product.id!)}
-                          className="bg-red-500 hover:bg-red-600 text-white p-2 rounded"
-                        >
-                          <Trash2 size={16} />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })}
+                      <button
+                        onClick={() => handleDelete(product._id)}
+                        className="bg-red-500 hover:bg-red-600 text-white p-2 rounded"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
               {paginatedProducts.length === 0 && (
                 <tr key="empty">
                   <td colSpan={7} className="text-center py-4 text-gray-500">

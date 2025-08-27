@@ -6,15 +6,16 @@ import { getUserFromToken } from "@/lib/getUserFromToken";
 // GET: Fetch attributes for logged-in user
 export async function GET(req: NextRequest) {
   await connect();
+
   try {
-    const user = await getUserFromToken(req);
+    const user = getUserFromToken(req); // get full user object
     const attributes = await Attribute.find({ userId: user.id }).sort({
-      _id: 1,
+      createdAt: -1,
     });
 
     return NextResponse.json(attributes);
-  } catch (error) {
-    console.error("GET error:", error);
+  } catch (error: any) {
+    console.error("GET error:", error.message);
     return NextResponse.json(
       { error: "Failed to fetch attributes" },
       { status: 500 }
@@ -25,16 +26,18 @@ export async function GET(req: NextRequest) {
 // POST: Add new attribute for logged-in user
 export async function POST(req: NextRequest) {
   await connect();
+
   try {
-    const user = await getUserFromToken(req);
+    const user = getUserFromToken(req);
     const data = await req.json();
 
-    if (!data.name || !data.name.trim()) {
+    const name = data.name?.trim();
+    if (!name) {
       return NextResponse.json({ error: "Name is required" }, { status: 400 });
     }
 
     const metricsArray = Array.isArray(data.metrics)
-      ? data.metrics
+      ? data.metrics.map((m: string) => m.trim()).filter(Boolean)
       : typeof data.metrics === "string"
       ? data.metrics
           .split(",")
@@ -42,10 +45,17 @@ export async function POST(req: NextRequest) {
           .filter(Boolean)
       : [];
 
+    if (metricsArray.length === 0) {
+      return NextResponse.json(
+        { error: "At least one metric is required" },
+        { status: 400 }
+      );
+    }
+
     const newAttribute = new Attribute({
-      name: data.name.trim(),
+      name,
       metrics: metricsArray,
-      userId: user.id,
+      userId: user.id, // <-- use user.id here
     });
 
     await newAttribute.save();
@@ -54,8 +64,8 @@ export async function POST(req: NextRequest) {
       message: "Attribute created",
       attribute: newAttribute,
     });
-  } catch (error) {
-    console.error("POST error:", error);
+  } catch (error: any) {
+    console.error("POST error:", error.message);
     return NextResponse.json(
       { error: "Failed to create attribute" },
       { status: 500 }
@@ -66,8 +76,9 @@ export async function POST(req: NextRequest) {
 // DELETE: Remove attribute by ID (only if it belongs to user)
 export async function DELETE(req: NextRequest) {
   await connect();
+
   try {
-    const user = await getUserFromToken(req);
+    const user = getUserFromToken(req);
     const { id } = await req.json();
 
     if (!id) {
@@ -76,7 +87,7 @@ export async function DELETE(req: NextRequest) {
 
     const deleted = await Attribute.findOneAndDelete({
       _id: id,
-      userId: user.id,
+      userId: user.id, // <-- use user.id here too
     });
 
     if (!deleted) {
@@ -87,8 +98,8 @@ export async function DELETE(req: NextRequest) {
     }
 
     return NextResponse.json({ message: "Attribute deleted" });
-  } catch (error) {
-    console.error("DELETE error:", error);
+  } catch (error: any) {
+    console.error("DELETE error:", error.message);
     return NextResponse.json(
       { error: "Failed to delete attribute" },
       { status: 500 }

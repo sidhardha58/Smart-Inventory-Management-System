@@ -98,13 +98,16 @@ export default function AddSalePage() {
     }
 
     try {
-      await axios.post("/api/dashboard/sales", {
-        items: salesList,
-      });
+      await axios.post("/api/dashboard/sales", { items: salesList });
       toast.success("Sales added successfully.");
+
+      // Optional: Refresh data on inventory and sales pages
+      router.refresh(); // Invalidate cache and fetch fresh data
+
       router.push("/dashboard/sales");
-    } catch (err) {
-      toast.error("Failed to add sales.");
+    } catch (err: any) {
+      const msg = err?.response?.data?.error || "Failed to add sales.";
+      toast.error(msg);
     }
   };
 

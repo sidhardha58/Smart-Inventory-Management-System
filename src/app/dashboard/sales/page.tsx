@@ -16,6 +16,7 @@ interface Sale {
   quantity: number;
   tax: number;
   totalPrice: number;
+  image?: string;
 }
 
 interface GroupedSale {
@@ -24,6 +25,7 @@ interface GroupedSale {
   soldAs: string;
   totalQuantity: number;
   totalSales: number;
+  image?: string;
 }
 
 export default function SalesListPage() {
@@ -47,12 +49,12 @@ export default function SalesListPage() {
     fetchSales();
   }, []);
 
-  // Group sales by productName + price + soldAs
   const groupSales = (sales: Sale[]): GroupedSale[] => {
     const grouped: Record<string, GroupedSale> = {};
 
     for (const sale of sales) {
       const key = `${sale.productName}-${sale.price}-${sale.soldAs}`;
+
       if (!grouped[key]) {
         grouped[key] = {
           productName: sale.productName,
@@ -60,6 +62,7 @@ export default function SalesListPage() {
           soldAs: sale.soldAs,
           totalQuantity: 0,
           totalSales: 0,
+          image: sale.image,
         };
       }
 
@@ -72,12 +75,10 @@ export default function SalesListPage() {
 
   const groupedSales = groupSales(sales);
 
-  // Filter by search
   const filteredGroupedSales = groupedSales.filter((sale) =>
     sale.productName.toLowerCase().includes(search.toLowerCase())
   );
 
-  // Pagination
   const totalPages = Math.ceil(filteredGroupedSales.length / itemsPerPage);
   const paginatedGroupedSales = filteredGroupedSales.slice(
     (currentPage - 1) * itemsPerPage,
@@ -129,6 +130,7 @@ export default function SalesListPage() {
             <thead className="bg-[#0077b6] text-white">
               <tr>
                 <th className="p-3 w-[60px]">#</th>
+                <th className="p-3 w-[80px]">Image</th>
                 <th className="p-3">Product</th>
                 <th className="p-3">Unit Price</th>
                 <th className="p-3">Total Quantity</th>
@@ -144,6 +146,13 @@ export default function SalesListPage() {
                   <td className="p-3">
                     {(currentPage - 1) * itemsPerPage + index + 1}
                   </td>
+                  <td className="p-3">
+                    <img
+                      src={sale.image || "/images/image.png"}
+                      alt={sale.productName}
+                      className="w-10 h-10 object-cover rounded"
+                    />
+                  </td>
                   <td className="p-3">{sale.productName}</td>
                   <td className="p-3">
                     ₹{sale.price}/{sale.soldAs}
@@ -154,7 +163,7 @@ export default function SalesListPage() {
               ))}
               {paginatedGroupedSales.length === 0 && (
                 <tr>
-                  <td colSpan={5} className="text-center py-4 text-gray-500">
+                  <td colSpan={6} className="text-center py-4 text-gray-500">
                     No sales found.
                   </td>
                 </tr>
