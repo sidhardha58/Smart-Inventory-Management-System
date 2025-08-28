@@ -11,7 +11,7 @@ interface Product {
   name: string;
   category: string;
   price: number;
-  quantity: number;
+  inventory: number;
   image?: string;
 }
 
@@ -46,15 +46,15 @@ export default function InventoryListPage() {
     try {
       await axios.patch(`/api/dashboard/inventory`, {
         productId,
-        quantity: editedQuantity,
+        inventory: editedQuantity,
       });
-      toast.success("Quantity updated");
+      toast.success("Inventory updated");
       setEditingId(null);
       setEditedQuantity(null);
       fetchProducts();
     } catch (error) {
       console.error(error);
-      toast.error("Failed to update quantity");
+      toast.error("Failed to update inventory");
     }
   };
 
@@ -111,7 +111,7 @@ export default function InventoryListPage() {
                 <th className="p-3">Product</th>
                 <th className="p-3">Category</th>
                 <th className="p-3">Unit Price</th>
-                <th className="p-3">Quantity</th>
+                <th className="p-3">Inventory</th>
               </tr>
             </thead>
             <tbody>
@@ -119,7 +119,7 @@ export default function InventoryListPage() {
                 <tr
                   key={product._id}
                   className={`border-b border-gray-200 hover:bg-gray-50 ${
-                    product.quantity <= 10 ? "bg-red-50" : ""
+                    product.inventory <= 10 ? "bg-red-50" : ""
                   }`}
                 >
                   <td className="p-3">
@@ -144,10 +144,10 @@ export default function InventoryListPage() {
                           </label>
                           <input
                             type="text"
-                            name="quantity"
+                            name="inventory"
                             inputMode="numeric"
                             pattern="\d*"
-                            value={editedQuantity ?? product.quantity}
+                            value={editedQuantity ?? product.inventory}
                             onChange={(e) =>
                               setEditedQuantity(Number(e.target.value))
                             }
@@ -158,7 +158,6 @@ export default function InventoryListPage() {
                           />
                         </div>
                         <div className="flex gap-2 mt-6">
-                          {/* ❌ Cancel */}
                           <button
                             onClick={() => {
                               setEditingId(null);
@@ -169,7 +168,6 @@ export default function InventoryListPage() {
                           >
                             <X size={20} />
                           </button>
-                          {/* ✔ Save */}
                           <button
                             onClick={() => handleQuantitySave(product._id)}
                             className="text-green-600 hover:text-green-800"
@@ -183,14 +181,14 @@ export default function InventoryListPage() {
                       <div
                         className="cursor-pointer flex items-center justify-between group border border-gray-300 hover:border-gray-400 rounded px-2 py-1 transition"
                         onClick={() =>
-                          handleQuantityEdit(product._id, product.quantity)
+                          handleQuantityEdit(product._id, product.inventory)
                         }
                         title="Click to edit"
                         style={{ minHeight: "32px" }}
                       >
                         <span>
-                          {product.quantity}
-                          {product.quantity <= 10 && (
+                          {product.inventory}
+                          {product.inventory <= 10 && (
                             <span className="ml-2 text-red-600 text-xs font-semibold">
                               Low Stock
                             </span>

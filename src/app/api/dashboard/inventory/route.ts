@@ -26,7 +26,7 @@ export async function GET(req: NextRequest) {
             ? product.category?.name || "-"
             : product.category || "-",
         price: product.attributes?.[0]?.price || 0,
-        inventory: product.inventory || 0, // Make sure this matches your schema
+        inventory: product.attributes?.[0]?.inventory ?? 0,
         image: product.image || null,
       };
     });
@@ -69,8 +69,7 @@ export async function PATCH(req: NextRequest) {
     if (!product) {
       return NextResponse.json({ error: "Product not found" }, { status: 404 });
     }
-
-    product.inventory = parsedInventory;
+    product.attributes[0].inventory = parsedInventory;
     await product.save();
 
     return NextResponse.json({
