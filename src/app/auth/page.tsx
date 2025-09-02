@@ -4,7 +4,7 @@ import Image from "next/image";
 import { useState } from "react";
 import axios from "axios";
 import loginImage from "../../../public/images/auth.jpg";
-import { toast, ToastContainer } from "react-toastify";
+import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import Link from "next/link";
 import { Mail, Eye, EyeOff, User } from "lucide-react";
@@ -255,7 +255,6 @@ const Auth = () => {
           </p>
         </div>
       </div>
-      <ToastContainer />
     </div>
   );
 };

@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import axios from "axios";
 import { Search } from "lucide-react";
 import Sidebar from "@/components/Sidebar";
-import { toast } from "react-hot-toast";
+import { toast, ToastContainer } from "react-toastify"; // ✅ Import from react-toastify
 import { useRouter } from "next/navigation";
 
 interface Sale {
@@ -193,6 +193,7 @@ export default function SalesListPage() {
           </div>
         </div>
       </main>
+      <ToastContainer />
     </div>
   );
 }

@@ -4,7 +4,8 @@ import { useEffect, useRef, useState } from "react";
 import axios from "axios";
 import Sidebar from "@/components/Sidebar";
 import { useRouter } from "next/navigation";
-import { toast } from "react-hot-toast";
+import { toast } from "react-toastify"; // react-toastify
+import "react-toastify/dist/ReactToastify.css"; // make sure CSS is imported
 import { Trash2, Plus, Search } from "lucide-react";
 
 interface Product {
@@ -73,7 +74,7 @@ export default function AddSalePage() {
     : products;
 
   const addToSalesList = () => {
-    if (!selectedProductId || quantity <= 0) {
+    if (!selectedProductId || quantity <= 0 || isNaN(quantity)) {
       toast.error("Please select a product and enter a valid quantity.");
       return;
     }
@@ -100,18 +101,18 @@ export default function AddSalePage() {
     try {
       await axios.post("/api/dashboard/sales", { items: salesList });
       toast.success("Sales added successfully.");
-
-      // Optional: Refresh data on inventory and sales pages
-      router.refresh(); // Invalidate cache and fetch fresh data
-
+      router.refresh();
       router.push("/dashboard/sales");
     } catch (err: any) {
-      const msg = err?.response?.data?.error || "Failed to add sales.";
-      toast.error(msg);
+      console.error("❌ Axios error:", err);
+
+      const errorMessage =
+        err?.response?.data?.error || err?.message || "Something went wrong.";
+
+      toast.error(errorMessage);
     }
   };
 
-  // ✅ Correct tax-included grand total calculation
   const totalCost = salesList.reduce((sum, item) => {
     const prod = productCache[item.productId];
     if (!prod) return sum;
@@ -212,12 +213,14 @@ export default function AddSalePage() {
                 Quantity *
               </label>
               <input
-                type="text"
+                type="number"
                 name="quantity"
-                inputMode="numeric"
-                pattern="\d*"
+                min={1}
                 value={quantity}
-                onChange={(e) => setQuantity(Number(e.target.value))}
+                onChange={(e) => {
+                  const val = parseInt(e.target.value);
+                  setQuantity(isNaN(val) ? 1 : val);
+                }}
                 placeholder="Enter quantity"
                 className="w-full border rounded px-3 py-2"
                 required
@@ -278,6 +281,7 @@ export default function AddSalePage() {
                           <button
                             onClick={() => removeFromSalesList(index)}
                             className="text-red-500 hover:text-red-700"
+                            aria-label="Remove product"
                           >
                             <Trash2 size={16} />
                           </button>
