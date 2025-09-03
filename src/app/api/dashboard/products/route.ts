@@ -14,12 +14,10 @@ export async function GET(req: NextRequest) {
   try {
     const user = await getUserFromToken(req);
 
-    // If user is not authenticated
     if (!user || !user.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Build query with userId and optional category
     const query: any = { userId: user.id };
     if (categoryId) {
       query.category = categoryId;
@@ -41,6 +39,7 @@ export async function GET(req: NextRequest) {
         attributeName: attr.attribute || "N/A",
         value: attr.value || "",
         price: attr.price || 0,
+        buyingPrice: attr.buyingPrice || 0, // ✅ Include buyingPrice
         inventory: attr.inventory || 0,
         tax: attr.tax || 0,
         soldAs: attr.soldAs || "",
@@ -84,7 +83,17 @@ export async function POST(req: NextRequest) {
 
     let attributes;
     try {
-      attributes = JSON.parse(attributesRaw);
+      const parsedAttributes = JSON.parse(attributesRaw);
+
+      attributes = parsedAttributes.map((attr: any) => ({
+        attribute: attr.attribute || "",
+        value: attr.value || "",
+        soldAs: attr.soldAs || "",
+        price: Number(attr.price) || 0,
+        buyingPrice: Number(attr.buyingPrice) || 0, // ✅ Add this field
+        inventory: Number(attr.inventory) || 0,
+        tax: attr.tax || "0",
+      }));
     } catch (err) {
       return NextResponse.json(
         { error: "Invalid attributes format" },
@@ -115,7 +124,7 @@ export async function POST(req: NextRequest) {
       description,
       attributes,
       image: imagePath,
-      userId: user.id, // ✅ Correct field for schema
+      userId: user.id,
     });
 
     return NextResponse.json({

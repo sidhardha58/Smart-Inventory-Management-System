@@ -2,6 +2,8 @@ import { connect } from "@/dbConfig/dbConfig";
 import Product from "@/models/productModel";
 import { NextRequest, NextResponse } from "next/server";
 import "@/models/categoryModel";
+import path from "path";
+import fs from "fs/promises";
 
 // ✅ GET: Fetch a product by ID
 export async function GET(
@@ -32,6 +34,7 @@ export async function GET(
         attribute: attr.attribute || "N/A",
         value: attr.value || "",
         price: attr.price || 0,
+        buyingPrice: attr.buyingPrice || 0, // Added buyingPrice
         inventory: attr.inventory || 0,
         tax: attr.tax || 0,
         soldAs: attr.soldAs || "",
@@ -71,7 +74,7 @@ export async function PUT(
     const name = formData.get("name") as string;
     const category = formData.get("category") as string;
     const description = formData.get("description") as string;
-    const attributes = JSON.parse(formData.get("attributes") as string);
+    const attributesRaw = formData.get("attributes") as string;
     const image = formData.get("image") as File | null;
 
     const product = await Product.findById(id);
@@ -79,11 +82,32 @@ export async function PUT(
       return NextResponse.json({ error: "Product not found" }, { status: 404 });
     }
 
+    // Parse attributes safely and add buyingPrice support
+    let attributes;
+    try {
+      const parsedAttrs = JSON.parse(attributesRaw);
+      attributes = parsedAttrs.map((attr: any) => ({
+        attribute: attr.attribute || "",
+        value: attr.value || "",
+        price: Number(attr.price) || 0,
+        buyingPrice: Number(attr.buyingPrice) || 0, // Support buyingPrice here
+        inventory: Number(attr.inventory) || 0,
+        tax: attr.tax || "0",
+        soldAs: attr.soldAs || "",
+      }));
+    } catch (err) {
+      return NextResponse.json(
+        { error: "Invalid attributes format" },
+        { status: 400 }
+      );
+    }
+
     product.name = name;
     product.category = category;
     product.description = description;
     product.attributes = attributes;
 
+    // Save image as base64 string if new image provided
     if (image && typeof image !== "string") {
       const buffer = Buffer.from(await image.arrayBuffer());
       const base64Image = `data:${image.type};base64,${buffer.toString(

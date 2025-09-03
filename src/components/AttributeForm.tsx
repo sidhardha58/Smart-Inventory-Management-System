@@ -7,6 +7,7 @@ type AttributeData = {
   value: string;
   soldAs: string;
   price: number;
+  buyingPrice: number; // ✅ Added
   inventory: number;
   tax: string;
 };
@@ -27,6 +28,7 @@ const AttributeForm: React.FC<AttributeFormProps> = ({
     value: "",
     soldAs: "",
     price: 0,
+    buyingPrice: 0, // ✅ Initial value
     inventory: 0,
     tax: "",
   });
@@ -43,7 +45,6 @@ const AttributeForm: React.FC<AttributeFormProps> = ({
 
   const formRef = useRef<HTMLDivElement>(null);
 
-  // Fetch attributes on load
   useEffect(() => {
     fetch("/api/dashboard/attributes")
       .then((res) => res.json())
@@ -75,7 +76,9 @@ const AttributeForm: React.FC<AttributeFormProps> = ({
     setForm({
       ...form,
       [name]:
-        name === "price" || name === "inventory" ? parseInt(value) || 0 : value,
+        name === "price" || name === "buyingPrice" || name === "inventory"
+          ? parseInt(value) || 0
+          : value,
     });
   };
 
@@ -87,11 +90,13 @@ const AttributeForm: React.FC<AttributeFormProps> = ({
       !form.soldAs ||
       !form.tax ||
       !form.price ||
+      !form.buyingPrice || // ✅ Validate buying price
       !form.inventory
     ) {
       alert("Please fill in all required fields.");
       return;
     }
+
     onSave(form);
     onClose();
   };
@@ -172,7 +177,7 @@ const AttributeForm: React.FC<AttributeFormProps> = ({
               )}
             </div>
 
-            {/* Value Dropdown (depends on selected attribute) */}
+            {/* Value Dropdown */}
             <div className="relative">
               <label className="block font-medium mb-1">
                 Attribute Value *
@@ -198,7 +203,7 @@ const AttributeForm: React.FC<AttributeFormProps> = ({
               {dropdownOptions("value", metricOptions)}
             </div>
 
-            {/* Sold As Dropdown */}
+            {/* Sold As */}
             <div className="relative">
               <label className="block font-medium mb-1">Sold As *</label>
               <div
@@ -222,9 +227,11 @@ const AttributeForm: React.FC<AttributeFormProps> = ({
               {dropdownOptions("soldAs", ["Piece", "Pack", "Kg"])}
             </div>
 
-            {/* Price Input */}
+            {/* Selling Price */}
             <div>
-              <label className="block text-sm font-medium mb-1">Price *</label>
+              <label className="block text-sm font-medium mb-1">
+                Selling Price (₹) *
+              </label>
               <input
                 type="text"
                 name="price"
@@ -238,7 +245,25 @@ const AttributeForm: React.FC<AttributeFormProps> = ({
               />
             </div>
 
-            {/* Stock Available Input */}
+            {/* ✅ Buying Price */}
+            <div>
+              <label className="block text-sm font-medium mb-1">
+                Buying Price (₹) *
+              </label>
+              <input
+                type="text"
+                name="buyingPrice"
+                inputMode="numeric"
+                pattern="\d*"
+                value={form.buyingPrice}
+                onChange={handleChange}
+                placeholder="Enter buying price in ₹"
+                className="w-full border rounded px-3 py-2"
+                required
+              />
+            </div>
+
+            {/* Inventory */}
             <div>
               <label className="block text-sm font-medium mb-1">
                 Stock Available *
@@ -256,7 +281,7 @@ const AttributeForm: React.FC<AttributeFormProps> = ({
               />
             </div>
 
-            {/* Tax Rate Input */}
+            {/* Tax */}
             <div>
               <label className="block text-sm font-medium mb-1">
                 Tax Rate (%) *
@@ -274,6 +299,7 @@ const AttributeForm: React.FC<AttributeFormProps> = ({
               />
             </div>
 
+            {/* Submit */}
             <button
               type="submit"
               className="bg-[#0077b6] hover:bg-[#005f87] text-white px-6 py-2 rounded w-full cursor-pointer"

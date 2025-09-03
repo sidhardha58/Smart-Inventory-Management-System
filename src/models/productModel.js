@@ -5,7 +5,8 @@ const attributeSchema = new mongoose.Schema(
     attribute: { type: String, required: true },
     value: { type: String, required: true },
     soldAs: { type: String, enum: ["Piece", "Pack"], required: true },
-    price: { type: Number, required: true },
+    price: { type: Number, required: true }, // 🔸 Selling Price
+    buyingPrice: { type: Number, required: true }, // 🔹 Buying Price (NEW)
     inventory: { type: Number, required: true },
     tax: { type: String, required: true },
   },
